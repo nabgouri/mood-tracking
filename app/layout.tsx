@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${redditSans.variable} antialiased flex flex-col items-center justify-center h-screen p-4 bg-linear-to-b from-[#f5f5ff] from-73% to-[#e0e0ff]`}
+        className={`${redditSans.variable} antialiased flex flex-col h-screen px-4 py-8 bg-linear-to-b from-[#f5f5ff] from-73% to-[#e0e0ff]`}
       >
         {children}
       </body>
