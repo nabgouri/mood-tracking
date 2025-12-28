@@ -26,7 +26,7 @@ export default function Header() {
     <header className="flex justify-between items-center w-full ">
       <Logo />
       <Popover>
-        <PopoverTrigger className="flex items-center gap-2.5">
+        <PopoverTrigger className="flex items-center gap-2.5 cursor-pointer">
           <Avatar>
             <AvatarImage
               alt="User Image"
@@ -37,7 +37,11 @@ export default function Header() {
           </Avatar>
           <ChevronDownIcon className="size-4" />
         </PopoverTrigger>
-        <PopoverContent align="start" sideOffset={16}>
+        <PopoverContent
+          align="start"
+          sideOffset={16}
+          className="w-[calc(100vw-32px)] md:w-56 me-8"
+        >
           <div className="grid gap-3  ">
             <div className="space-y-1 pb-3 border-b border-input">
               <h4 className="text-lg font-medium leading-[120%]">User Name</h4>

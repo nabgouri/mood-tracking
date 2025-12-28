@@ -32,7 +32,7 @@ export default function Home() {
           </p>
         </section>
         <LogMood triggerContent="Log today's mood" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl :grid-cols-2 gap-8">
           <Card className="py-5 gap-0 w-full">
             <CardHeader className=" gap-0  pb-3">
               <CardTitle className="text-xl leading-[140%] flex items-center gap-2">
