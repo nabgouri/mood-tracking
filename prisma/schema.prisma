@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Mood values enum
+enum Mood {
+  VERY_SAD
+  SAD
+  NEUTRAL
+  HAPPY
+  VERY_HAPPY
+}
+
+// User model for future authentication
+model User {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  name       String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  moodEntries MoodEntry[]
+}
+
+// Mood entry model - stores each mood check-in
+model MoodEntry {
+  id           String   @id @default(cuid())
+  userId       String?  // Optional for now (before auth is implemented)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Mood data (enum: VERY_SAD, SAD, NEUTRAL, HAPPY, VERY_HAPPY)
+  mood         Mood @default(NEUTRAL)
+
+  // Feelings (stored as comma-separated values or JSON)
+  feelings     String   // We'll store as JSON string: JSON.stringify(array)
+
+  // Journal entry
+  journalEntry String
+
+  // Sleep hours (0-4 representing ranges: 0-2, 3-4, 5-6, 7-8, 9+)
+  sleepHours   Int
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}

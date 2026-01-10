@@ -14,25 +14,46 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+
+// Mood enum type matching Prisma schema
+type Mood = "VERY_SAD" | "SAD" | "NEUTRAL" | "HAPPY" | "VERY_HAPPY";
+
+// Type guard to validate mood values
+function isMood(value: string): value is Mood {
+  return ["VERY_SAD", "SAD", "NEUTRAL", "HAPPY", "VERY_HAPPY"].includes(value);
+}
+
 export default function LogMood({
   triggerContent,
+  className,
+  onMoodSubmit,
 }: {
   triggerContent: string;
-}) {
-  const [moodData, setMoodData] = useState<{
-    mood: -2 | -1 | 0 | 1 | 2;
+  className?: string;
+  onMoodSubmit?: (moodData: {
+    mood: Mood;
     feelings: string[];
     journalEntry: string;
     sleepHours: number;
+  }) => void;
+}) {
+  const [moodData, setMoodData] = useState<{
+    mood: Mood | null;
+    feelings: string[];
+    journalEntry: string;
+    sleepHours: number | null;
     createdAt: string;
   }>({
-    mood: 2,
+    mood: null,
     feelings: [],
     journalEntry: "",
-    sleepHours: 0,
+    sleepHours: null,
     createdAt: new Date().toISOString(),
   });
   const [moodStep, setMoodStep] = useState<1 | 2 | 3 | 4>(1);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const handleMoodStep = (step: 1 | 2 | 3 | 4) => {
     setMoodStep(step);
   };
@@ -43,10 +64,106 @@ export default function LogMood({
     "How many hours did you sleep last night?",
   ];
 
+  const handleProceed = async () => {
+    // Validation for step 1
+    if (moodStep === 1) {
+      if (moodData.mood === null) {
+        setErrorMessage("Please select a mood before continuing.");
+        return;
+      }
+      setErrorMessage(null);
+      handleMoodStep(2);
+    }
+    // Validation for step 2
+    else if (moodStep === 2) {
+      if (moodData.feelings.length === 0) {
+        setErrorMessage("Please select at least one tag");
+        return;
+      }
+      if (moodData.feelings.length > 3) {
+        setErrorMessage("You can only select a maximum of 3 tags.");
+        return;
+      }
+      setErrorMessage(null);
+      handleMoodStep(3);
+    }
+    // Validation for step 3
+    else if (moodStep === 3) {
+      if (moodData.journalEntry.length === 0) {
+        setErrorMessage(
+          "Please write a few words about your day before continuing."
+        );
+        return;
+      }
+      setErrorMessage(null);
+      handleMoodStep(4);
+    }
+    // Submit data on step 4
+    else if (moodStep === 4) {
+      if (moodData.sleepHours === null) {
+        setErrorMessage("Please select how many hours you slept");
+        return;
+      }
+
+      setErrorMessage(null);
+      setIsSubmitting(true);
+
+      try {
+        const response = await fetch('/api/moods', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            mood: moodData.mood,
+            feelings: moodData.feelings,
+            journalEntry: moodData.journalEntry,
+            sleepHours: moodData.sleepHours,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Failed to save mood entry');
+        }
+
+        // Success! Call callback with the submitted data
+        if (onMoodSubmit && moodData.mood !== null && moodData.sleepHours !== null) {
+          onMoodSubmit({
+            mood: moodData.mood,
+            feelings: moodData.feelings,
+            journalEntry: moodData.journalEntry,
+            sleepHours: moodData.sleepHours,
+          });
+        }
+
+        // Reset form and close dialog
+        setMoodData({
+          mood: null,
+          feelings: [],
+          journalEntry: "",
+          sleepHours: null,
+          createdAt: new Date().toISOString(),
+        });
+        setMoodStep(1);
+        setIsOpen(false);
+      } catch (error) {
+        console.error('Error saving mood:', error);
+        setErrorMessage(
+          error instanceof Error ? error.message : 'Failed to save mood entry. Please try again.'
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="mb-16">{triggerContent}</Button>
+        <Button className={`mb-16 ${className} cursor-pointer`}>
+          {triggerContent}
+        </Button>
       </DialogTrigger>
       <DialogContent className="bg-linear-to-b from-[#f5f5ff] overflow-y-auto max-h-[80vh] from-73% gap-6 md:gap-8 to-[#e0e0ff] px-5 md:px-10 py-8 md:py-12">
         <DialogHeader>
@@ -91,6 +208,7 @@ export default function LogMood({
             setFeelings={(newFeelings) =>
               setMoodData({ ...moodData, feelings: newFeelings })
             }
+            setErrorMessage={setErrorMessage}
           />
         )}
         {moodStep === 3 && (
@@ -109,13 +227,18 @@ export default function LogMood({
             }
           />
         )}
-        <DialogFooter>
+
+        <DialogFooter className="flex md:flex-col gap-2">
+          {errorMessage && (
+            <span className="text-destructive text-base ">{errorMessage}</span>
+          )}
           <Button
             type="submit"
             className="w-full"
-            onClick={() => handleMoodStep((moodStep + 1) as 1 | 2 | 3 | 4)}
+            onClick={handleProceed}
+            disabled={isSubmitting}
           >
-            {moodStep === 4 ? "Submit" : "Continue"}
+            {isSubmitting ? "Saving..." : moodStep === 4 ? "Submit" : "Continue"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -126,79 +249,58 @@ function MoodStepOne({
   mood,
   setMood,
 }: {
-  mood: -2 | -1 | 0 | 1 | 2;
-  setMood: (mood: -2 | -1 | 0 | 1 | 2) => void;
+  mood: Mood | null;
+  setMood: (mood: Mood | null) => void;
 }) {
+  const moodOptions: { value: Mood; id: string; label: string; icon: string }[] = [
+    {
+      value: "VERY_HAPPY",
+      id: "very-happy",
+      label: "Very Happy",
+      icon: "/logMood-icons/very-happy.svg",
+    },
+    { value: "HAPPY", id: "happy", label: "Happy", icon: "/logMood-icons/Happy.svg" },
+    {
+      value: "NEUTRAL",
+      id: "neutral",
+      label: "Neutral",
+      icon: "/logMood-icons/Neutral.svg",
+    },
+    { value: "SAD", id: "sad", label: "Sad", icon: "/logMood-icons/Sad.svg" },
+    {
+      value: "VERY_SAD",
+      id: "very-sad",
+      label: "Very Sad",
+      icon: "/logMood-icons/very-sad.svg",
+    },
+  ];
+
   return (
     <RadioGroup
-      value={mood.toString()}
-      onValueChange={(value) => setMood(parseInt(value) as -2 | -1 | 0 | 1 | 2)}
+      value={mood ?? ""}
+      onValueChange={(value) => {
+        if (isMood(value)) {
+          setMood(value);
+        }
+      }}
     >
-      <div className="flex items-center justify-between bg-card border border-border rounded-lg px-5 py-3">
-        <div className="flex items-center gap-3 ">
-          <RadioGroupItem value="2" id="1-a" />
-          <Label className="text-xl leading-[140%] font-semibold" htmlFor="1-a">
-            Very Happy
-          </Label>
+      {moodOptions.map((option) => (
+        <div
+          key={option.id}
+          className="flex items-center justify-between bg-card border-2 border-border rounded-lg px-5 py-3 cursor-pointer hover:bg-muted-foreground/10"
+        >
+          <div className="flex items-center gap-3">
+            <RadioGroupItem value={option.value} id={option.id} />
+            <Label
+              className="text-xl leading-[140%] font-semibold cursor-pointer"
+              htmlFor={option.id}
+            >
+              {option.label}
+            </Label>
+          </div>
+          <Image src={option.icon} alt={option.label} width={38} height={38} />
         </div>
-        <Image
-          src="/logMood-icons/very-happy.svg"
-          alt="Very Happy"
-          width={38}
-          height={38}
-        />
-      </div>
-      <div className="flex items-center justify-between bg-card border border-border rounded-lg px-5 py-3">
-        <div className="flex items-center gap-3 ">
-          <RadioGroupItem value="1" id="2-a" />
-          <Label className="text-xl leading-[140%] font-semibold" htmlFor="2-a">
-            Happy
-          </Label>
-        </div>
-        <Image
-          src="/logMood-icons/Happy.svg"
-          alt="Happy"
-          width={38}
-          height={38}
-        />
-      </div>
-      <div className="flex items-center justify-between bg-card border border-border rounded-lg px-5 py-3">
-        <div className="flex items-center gap-3 ">
-          <RadioGroupItem value="0" id="3-a" />
-          <Label className="text-xl leading-[140%] font-semibold" htmlFor="3-a">
-            Neutral
-          </Label>
-        </div>
-        <Image
-          src="/logMood-icons/Neutral.svg"
-          alt="Neutral"
-          width={38}
-          height={38}
-        />
-      </div>
-      <div className="flex items-center justify-between bg-card border border-border rounded-lg px-5 py-3">
-        <div className="flex items-center gap-3 ">
-          <RadioGroupItem value="-1" id="4-a" />
-          <Label className="text-xl leading-[140%] font-semibold" htmlFor="4-a">
-            Sad
-          </Label>
-        </div>
-        <Image src="/logMood-icons/Sad.svg" alt="Sad" width={38} height={38} />
-      </div>
-      <div className="flex items-center justify-between bg-card border border-border rounded-lg px-5 py-3">
-        <div className="flex items-center gap-3 ">
-          <RadioGroupItem value="-2" id="5-a" />
-          <Label className="text-xl leading-[140%] font-semibold" htmlFor="5-a">
-            Very Sad
-          </Label>
-        </div>
-        <Image
-          src="/logMood-icons/very-sad.svg"
-          alt="Very Sad"
-          width={38}
-          height={38}
-        />
-      </div>
+      ))}
     </RadioGroup>
   );
 }
@@ -206,9 +308,11 @@ function MoodStepOne({
 function MoodStepTwo({
   feelings,
   setFeelings,
+  setErrorMessage,
 }: {
   feelings: string[];
   setFeelings: (feelings: string[]) => void;
+  setErrorMessage: (errorMessage: string | null) => void;
 }) {
   const feelingsOptions = [
     "Joyful",
@@ -232,24 +336,38 @@ function MoodStepTwo({
     "Optimistic",
     "Restless",
   ];
+
+  if (feelings.length > 3) {
+    setErrorMessage("You can only select a maximum of 3 tags.");
+  }
+
   return (
     <div className="flex flex-wrap gap-3">
-      {feelingsOptions.map((feelingOption, index) => {
-        return (
-          <div
-            key={index}
-            className="flex items-center gap-3 bg-card border-2 border-border focus-within:border-primary rounded-lg px-3 py-4"
+      {feelingsOptions.map((feelingOption) => (
+        <div
+          key={feelingOption}
+          className="flex items-center gap-3 bg-card border-2 border-border focus-within:border-primary rounded-lg px-3 py-4"
+        >
+          <Checkbox
+            id={feelingOption}
+            value={feelingOption}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setFeelings([...feelings, feelingOption]);
+              } else {
+                setFeelings(feelings.filter((f) => f !== feelingOption));
+              }
+            }}
+            checked={feelings.includes(feelingOption)}
+          />
+          <Label
+            className="text-xl leading-[140%] font-semibold"
+            htmlFor={feelingOption}
           >
-            <Checkbox id={feelingOption} />
-            <Label
-              className="text-xl leading-[140%] font-semibold"
-              htmlFor={feelingOption}
-            >
-              {feelingOption}
-            </Label>
-          </div>
-        );
-      })}
+            {feelingOption}
+          </Label>
+        </div>
+      ))}
     </div>
   );
 }
@@ -281,7 +399,7 @@ function MoodStepFour({
   sleepHours,
   setSleepHours,
 }: {
-  sleepHours: number;
+  sleepHours: number | null;
   setSleepHours: (sleepHours: number) => void;
 }) {
   const sleepHoursOptions = [
@@ -291,29 +409,28 @@ function MoodStepFour({
     "3-4 hours",
     "0-2 hours",
   ];
+
   return (
     <RadioGroup
-      value={sleepHours.toString()}
+      value={sleepHours !== null ? sleepHours.toString() : ""}
       onValueChange={(value) => setSleepHours(parseInt(value))}
     >
-      {sleepHoursOptions.map((sleepHoursOption, index) => {
-        return (
-          <div
-            key={index}
-            className="flex items-center justify-between bg-card border-2 border-border rounded-lg px-5 py-3 focus-within:border-primary"
-          >
-            <div className="flex items-center gap-3 ">
-              <RadioGroupItem value={index.toString()} id={sleepHoursOption} />
-              <Label
-                className="text-xl leading-[140%] font-semibold"
-                htmlFor={sleepHoursOption}
-              >
-                {sleepHoursOption}
-              </Label>
-            </div>
+      {sleepHoursOptions.map((option, index) => (
+        <div
+          key={option}
+          className="flex items-center justify-between bg-card border-2 border-border rounded-lg px-5 py-3 focus-within:border-primary"
+        >
+          <div className="flex items-center gap-3">
+            <RadioGroupItem value={index.toString()} id={option} />
+            <Label
+              className="text-xl leading-[140%] font-semibold"
+              htmlFor={option}
+            >
+              {option}
+            </Label>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </RadioGroup>
   );
 }
