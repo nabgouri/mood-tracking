@@ -101,6 +101,11 @@ export default function LogMood({
     }
     // Submit data on step 4
     else if (moodStep === 4) {
+      if (moodData.mood === null) {
+        setErrorMessage("Please select a mood");
+        return;
+      }
+
       if (moodData.sleepHours === null) {
         setErrorMessage("Please select how many hours you slept");
         return;
