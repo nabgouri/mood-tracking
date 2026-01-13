@@ -123,11 +123,15 @@ export default function LogMood({
         });
 
         if (!result.success) {
-          throw new Error(result.error || 'Failed to save mood entry');
+          throw new Error(result.error || "Failed to save mood entry");
         }
 
         // Success! Call callback with the submitted data
-        if (onMoodSubmit && moodData.mood !== null && moodData.sleepHours !== null) {
+        if (
+          onMoodSubmit &&
+          moodData.mood !== null &&
+          moodData.sleepHours !== null
+        ) {
           onMoodSubmit({
             mood: moodData.mood,
             feelings: moodData.feelings,
@@ -147,9 +151,11 @@ export default function LogMood({
         setMoodStep(1);
         setIsOpen(false);
       } catch (error) {
-        console.error('Error saving mood:', error);
+        console.error("Error saving mood:", error);
         setErrorMessage(
-          error instanceof Error ? error.message : 'Failed to save mood entry. Please try again.'
+          error instanceof Error
+            ? error.message
+            : "Failed to save mood entry. Please try again."
         );
       } finally {
         setIsSubmitting(false);
@@ -163,7 +169,7 @@ export default function LogMood({
           {triggerContent}
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-linear-to-b from-[#f5f5ff] overflow-y-auto max-h-[80vh] from-73% gap-6 md:gap-8 to-[#e0e0ff] px-5 md:px-10 py-8 md:py-12">
+      <DialogContent className="bg-linear-to-b from-[#f5f5ff] overflow-y-auto max-h-[80vh] min-w-[600px] from-73% gap-6 md:gap-4.5 to-[#e0e0ff] px-5 md:px-10 py-8 md:py-6">
         <DialogHeader>
           <DialogTitle className="text-[2rem] md:text-[2.5rem] text-start font-bold leading-[140%] tracking-[-0.02em]">
             Log your mood
@@ -236,7 +242,11 @@ export default function LogMood({
             onClick={handleProceed}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Saving..." : moodStep === 4 ? "Submit" : "Continue"}
+            {isSubmitting
+              ? "Saving..."
+              : moodStep === 4
+              ? "Submit"
+              : "Continue"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -250,14 +260,24 @@ function MoodStepOne({
   mood: Mood | null;
   setMood: (mood: Mood | null) => void;
 }) {
-  const moodOptions: { value: Mood; id: string; label: string; icon: string }[] = [
+  const moodOptions: {
+    value: Mood;
+    id: string;
+    label: string;
+    icon: string;
+  }[] = [
     {
       value: "VERY_HAPPY",
       id: "very-happy",
       label: "Very Happy",
       icon: "/logMood-icons/very-happy.svg",
     },
-    { value: "HAPPY", id: "happy", label: "Happy", icon: "/logMood-icons/Happy.svg" },
+    {
+      value: "HAPPY",
+      id: "happy",
+      label: "Happy",
+      icon: "/logMood-icons/Happy.svg",
+    },
     {
       value: "NEUTRAL",
       id: "neutral",

@@ -10,6 +10,9 @@ const redditSans = Reddit_Sans({
 export const metadata: Metadata = {
   title: "Mood Tracking",
   description: "Mood Tracking",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
