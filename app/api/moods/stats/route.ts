@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Mood } from "@prisma/client";
+
+// Map mood enum to numeric value for calculations
+const moodToNumber: Record<Mood, number> = {
+  VERY_SAD: -2,
+  SAD: -1,
+  NEUTRAL: 0,
+  HAPPY: 1,
+  VERY_HAPPY: 2,
+};
 
 // GET /api/moods/stats - Get mood and sleep statistics
 export async function GET() {
@@ -20,7 +30,7 @@ export async function GET() {
     let averageMood = null;
     if (last5Moods.length === 5) {
       const moodSum = last5Moods.reduce(
-        (sum: number, entry: { mood: number }) => sum + entry.mood,
+        (sum, entry) => sum + moodToNumber[entry.mood],
         0
       );
       averageMood = moodSum / 5;
@@ -28,13 +38,9 @@ export async function GET() {
 
     // Calculate average sleep
     let averageSleep = null;
-    const sleepEntries = last5Moods.filter(
-      (entry: { mood: number; sleepHours: number | null }): entry is typeof entry & { sleepHours: number } =>
-        entry.sleepHours !== null
-    );
-    if (sleepEntries.length === 5) {
-      const sleepSum = sleepEntries.reduce(
-        (sum: number, entry: { mood: number; sleepHours: number }) => sum + entry.sleepHours,
+    if (last5Moods.length === 5) {
+      const sleepSum = last5Moods.reduce(
+        (sum, entry) => sum + entry.sleepHours,
         0
       );
       averageSleep = sleepSum / 5;
@@ -50,7 +56,7 @@ export async function GET() {
         averageSleep,
         totalEntries,
         hasEnoughMoodData: last5Moods.length >= 5,
-        hasEnoughSleepData: sleepEntries.length >= 5,
+        hasEnoughSleepData: last5Moods.length >= 5,
       },
     });
   } catch (error) {

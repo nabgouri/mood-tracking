@@ -1,19 +1,34 @@
-import { PrismaClient } from '@prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
-// PrismaClient is attached to the `global` object in development to prevent
-// exhausting your database connection limit during hot reload in Next.js
+// Required for local development/Node environments
+neonConfig.webSocketConstructor = ws;
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+  prisma: PrismaClient | undefined;
+};
+
+function createPrismaClient() {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is missing");
+  }
+
+  // Pass connectionString directly to the adapter (not a Pool instance)
+  const adapter = new PrismaNeon({ connectionString });
+
+  return new PrismaClient({
+    adapter,
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
+  });
 }
 
-// Create SQLite adapter with URL (Prisma 7 syntax)
-const adapter = new PrismaBetterSqlite3({ url: 'file:./prisma/dev.db' })
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  adapter,
-  log: ['query', 'error', 'warn'], // Logs all queries in development
-})
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

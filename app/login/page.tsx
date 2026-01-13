@@ -3,10 +3,9 @@ import Logo from "@/components/custom/logo";
 
 import { Button } from "@/components/ui/button";
 import { useActionState } from "react";
-import { signupAction } from "./actions";
+import { loginAction } from "./actions";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -17,28 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
-export default function SignUp() {
-  const [error, action, isPending] = useActionState(signupAction, null);
-
-  // const validateForm = () => {
-  //   if (!signupForm.email) {
-  //     setError("Email is required");
-  //     return false;
-  //   }
-  //   if (!signupForm.password) {
-  //     setError("Password is required");
-  //     return false;
-  //   }
-  //   if (!signupForm.email.includes("@")) {
-  //     setError("Invalid email");
-  //     return false;
-  //   }
-  //   if (signupForm.password.length < 8) {
-  //     setError("Password must be at least 8 characters long");
-  //     return false;
-  //   }
-  //   return true;
-  // };
+export default function Login() {
+  const [error, action, isPending] = useActionState(loginAction, null);
 
   return (
     <div className="flex gap-8 md:gap-12 flex-col items-center justify-center flex-1">
@@ -46,15 +25,15 @@ export default function SignUp() {
       <Card className="w-full max-w-sm md:max-w-lg py-10">
         <CardHeader>
           <CardTitle className="text-[2rem] font-bold leading-[120%] tracking-[-0.02em]">
-            Create an account
+            Welcome back!
           </CardTitle>
           <CardDescription>
-            Join to track your daily mood and sleep with ease.
+            Log in to continue tracking your mood and sleep.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={action} id="signup-form">
-            <div className="flex  flex-col gap-6">
+          <form action={action} id="login-form">
+            <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email address</Label>
                 <Input
@@ -78,16 +57,16 @@ export default function SignUp() {
         <CardFooter className="flex-col gap-5">
           <Button
             type="submit"
-            form="signup-form"
+            form="login-form"
             className="w-full"
             disabled={isPending}
           >
-            Sign up
+            Log In
           </Button>
           <p className="text-lg text-muted-foreground">
-            Already got an account?{" "}
-            <Link href="/login" className="text-primary">
-              Log in.
+            Haven&apos;t got an account?{" "}
+            <Link href="/sign-up" className="text-primary">
+              Sign up.
             </Link>
           </p>
         </CardFooter>

@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { createMoodEntry } from "@/lib/actions";
 
 // Mood enum type matching Prisma schema
 type Mood = "VERY_SAD" | "SAD" | "NEUTRAL" | "HAPPY" | "VERY_HAPPY";
@@ -109,22 +110,14 @@ export default function LogMood({
       setIsSubmitting(true);
 
       try {
-        const response = await fetch('/api/moods', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            mood: moodData.mood,
-            feelings: moodData.feelings,
-            journalEntry: moodData.journalEntry,
-            sleepHours: moodData.sleepHours,
-          }),
+        const result = await createMoodEntry({
+          mood: moodData.mood,
+          feelings: moodData.feelings,
+          journalEntry: moodData.journalEntry,
+          sleepHours: moodData.sleepHours,
         });
 
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
+        if (!result.success) {
           throw new Error(result.error || 'Failed to save mood entry');
         }
 

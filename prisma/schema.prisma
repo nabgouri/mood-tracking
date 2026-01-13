@@ -3,10 +3,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // Mood values enum
@@ -18,14 +19,30 @@ enum Mood {
   VERY_HAPPY
 }
 
-// User model for future authentication
+// User model for authentication
 model User {
-  id         String      @id @default(cuid())
-  email      String      @unique
-  name       String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  moodEntries MoodEntry[]
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String      // bcrypt hashed password
+  name         String?
+  profileImage String?     // Base64 encoded profile image (optional)
+  onboarded    Boolean     @default(false) // Has user completed onboarding?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  moodEntries  MoodEntry[]
+  sessions     Session[]
+}
+
+// Session model for auth sessions
+// Sessions are stored server-side for security
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime // Session expiration time
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // Mood entry model - stores each mood check-in

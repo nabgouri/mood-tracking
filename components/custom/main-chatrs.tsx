@@ -52,7 +52,7 @@ const CustomYAxisTick = ({ x = 0, y = 0, payload }: CustomYAxisTickProps) => {
   return (
     <g transform={`translate(${x},${y})`}>
       <image
-        href="/logMood-icons/Sleep icon.png"
+        href="/logMood-icons/Sleep-icon.svg"
         x={-95}
         y={-8}
         width={16}
@@ -135,8 +135,8 @@ const CustomBarShape = ({
   const mood = payload.mood;
   const color = getMoodColor(mood);
   const iconPath = getMoodIconPath(mood);
-  const radius = 20; // Rounded corner radius
-  const iconSize = 24; // Icon size
+  const radius = 25; // Rounded corner radius
+  const iconSize = 30; // Icon size
 
   return (
     <g>
@@ -150,11 +150,11 @@ const CustomBarShape = ({
         rx={radius}
         ry={radius}
       />
-      {/* Mood icon at top of bar */}
+      {/* Mood icon inside bar at top */}
       <image
         href={iconPath}
         x={x + width / 2 - iconSize / 2}
-        y={y - iconSize - 4}
+        y={y + 8}
         width={iconSize}
         height={iconSize}
       />
@@ -168,26 +168,35 @@ export default function MainCharts({
   data: { day: string; hours: number; mood: number }[];
 }) {
   return (
-    <div className="w-full bg-card rounded-2xl border border-border mt-8 xl:mt-0 py-5 px-4 md:px-5 xl:px-8 md:py-8  grid gap-5">
+    <div className=" bg-card rounded-2xl border border-border mt-8 xl:mt-0 py-5 px-4 md:px-5 xl:px-8 md:py-8  grid gap-5">
       <h2 className="text-[1.75rem] md:text-[2rem] md:leading-[140%] font-medium leading-[130%] tracking-[-0.02em]">
         Mood and Sleep Trends
       </h2>
       {data.length > 0 && (
-        <div className="w-full overflow-x-auto">
-          <ChartContainer config={{}} className="min-h-[400px]">
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="day" tick={<CustomXAxisTick />} height={60} />
-              <YAxis
-                width={120}
-                tick={<CustomYAxisTick />}
-                domain={[0, 10]}
-                ticks={[0, 2.5, 5, 7.5, 10]}
-              />
-              <Bar dataKey="hours" shape={<CustomBarShape />} />
-            </BarChart>
-          </ChartContainer>
-        </div>
+        <ChartContainer config={{}}>
+          <BarChart data={data}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#E0E6FA"
+              strokeWidth={2}
+            />
+            <XAxis
+              dataKey="day"
+              tick={<CustomXAxisTick />}
+              height={60}
+              stroke="transparent"
+            />
+            <YAxis
+              width={120}
+              tick={<CustomYAxisTick />}
+              domain={[0, 10]}
+              ticks={[0, 2.5, 5, 7.5, 10]}
+              stroke="transparent"
+            />
+            <Bar dataKey="hours" shape={<CustomBarShape />} maxBarSize={45} />
+          </BarChart>
+        </ChartContainer>
       )}
       {data.length === 0 && (
         <p className="text-muted-foreground text-[15px] font-medium leading-[120%] text-center">

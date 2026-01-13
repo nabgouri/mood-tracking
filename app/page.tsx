@@ -10,6 +10,7 @@ import {
 import TodayMoodSection from "@/components/custom/today-mood-section";
 import { prisma } from "@/lib/prisma";
 import { Mood } from "@prisma/client";
+import { requireAuth } from "@/lib/auth-guard";
 
 // Map mood enum to numeric value for calculations
 const moodToNumber: Record<Mood, number> = {
@@ -48,6 +49,9 @@ function sleepIndexToChartValue(sleepIndex: number): number {
 }
 
 export default async function Home() {
+  // Require authentication - redirects to /login if not logged in
+  const { user } = await requireAuth();
+
   const today = new Date();
   const dayOfWeek = today.toLocaleDateString("en-US", { weekday: "long" });
   const month = today.toLocaleDateString("en-US", { month: "long" });
@@ -72,8 +76,9 @@ export default async function Home() {
     day
   )}, ${year}`;
 
-  // Query database for stats
+  // Query database for stats (filtered by current user)
   const last5Moods = await prisma.moodEntry.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     take: 5,
     select: { mood: true, sleepHours: true },
@@ -82,7 +87,10 @@ export default async function Home() {
   let averageMood: number | null = null;
   if (last5Moods.length === 5) {
     averageMood =
-      last5Moods.reduce((sum: number, entry) => sum + moodToNumber[entry.mood], 0) / 5;
+      last5Moods.reduce(
+        (sum: number, entry) => sum + moodToNumber[entry.mood],
+        0
+      ) / 5;
   }
 
   let averageSleep: number | null = null;
@@ -102,6 +110,7 @@ export default async function Home() {
 
   const todayMoodEntryRaw = await prisma.moodEntry.findFirst({
     where: {
+      userId: user.id,
       createdAt: {
         gte: startOfToday,
         lte: endOfToday,
@@ -125,8 +134,9 @@ export default async function Home() {
       }
     : null;
 
-  // Query mood entries for the chart (all entries, ordered by date ascending)
+  // Query mood entries for the chart (user's entries, ordered by date ascending)
   const chartEntries = await prisma.moodEntry.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "asc" },
     select: { createdAt: true, sleepHours: true, mood: true },
   });
@@ -145,11 +155,11 @@ export default async function Home() {
 
   return (
     <>
-      <Header />
+      <Header user={{ name: user.name, email: user.email, profileImage: user.profileImage }} />
       <main className="flex-1 flex flex-col   w-full ">
         <section className="flex flex-col items-center py-12 gap-4">
           <span className="text-primary text-[1.75rem] md:text-[2rem]  font-bold leading-[130%] md:leading-[140%] tracking-[-0.02em]">
-            Hello, username!
+            Hello, {user.name || user.email.split("@")[0]}!
           </span>
           <h1 className="text-foreground text-[2.875rem] md:text-[3.25rem]  text-center  font-bold leading-[120%] md:leading-[140%] tracking-[-2px]">
             How are you feeling today?
@@ -159,7 +169,7 @@ export default async function Home() {
           </p>
         </section>
         <TodayMoodSection initialMoodEntry={todayMoodEntry} />
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-[40%_60%] gap-8">
           <Card className="py-5 gap-0 w-full">
             <CardHeader className=" gap-0  pb-3">
               <CardTitle className="text-xl leading-[140%] flex items-center gap-2">
