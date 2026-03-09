@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { InfoIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function Login() {
@@ -35,7 +42,45 @@ export default function Login() {
           <form action={action} id="login-form">
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email address</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="email">Email address</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoIcon className="size-5 text-muted-foreground cursor-pointer" />
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        align="center"
+                        className="max-w-md bg-white text-foreground rounded-xl p-4 shadow-lg border border-border [&>svg]:hidden"
+                      >
+                        <p className="font-semibold flex items-center gap-1.5 mb-2">
+                          <InfoIcon className="size-4 text-primary" />
+                          Demo Access
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-2 w-full">
+                          You can sign up using a fake email, as long as it&apos;s in a
+                          valid format. I recommend signing up, so you can
+                          experience the full onboarding process.
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-3 border-t-2 border-border pt-3">
+                          Alternatively, you can log in to an existing demo
+                          account using these credentials.
+                        </p>
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm">
+                          <div className="flex gap-4">
+                            <span className="text-muted-foreground">Email:</span>
+                            <span className="font-medium">ayman@nabgouri.com</span>
+                          </div>
+                          <div className="flex gap-4">
+                            <span className="text-muted-foreground">Password:</span>
+                            <span className="font-medium">Ayman1234</span>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Input
                   id="email"
                   name="email"
